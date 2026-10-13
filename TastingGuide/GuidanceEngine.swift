@@ -204,9 +204,9 @@ enum GuidanceEngine {
         let region = WineKnowledge.region(forKey: inputs.region)
 
         let appearanceSuggestions = (wineType?.appearance ?? []) + colorWords(from: inputs.grapeVarieties)
-        let aromaSuggestions = unique((wineType?.aromas ?? []) + grapeWords + (region?.blurb.components(separated: .whitespacesAndNewlines).filter { $0.count > 4 } ?? []))
+        let aromaSuggestions = unique((wineType?.aromas ?? []) + grapeWords + (region?.blurb.components(separatedBy: .whitespacesAndNewlines).filter { $0.count > 4 } ?? []))
         let flavorSuggestions = unique((wineType?.flavors ?? []) + grapeWords)
-        let bodySuggestions = unique((wineType?.bodyWords ?? []) + bodyWords(forAbv: inputs.alcoholPercentage))
+        let bodySuggestions = unique((wineType?.bodyWords ?? []) + wineBodyWords(forAbv: inputs.alcoholPercentage))
         let finishSuggestions = unique((wineType?.finishWords ?? []) + finishWords(forVintage: inputs.vintage))
 
         let stageExpectations = WineKnowledge.expectations(forKey: inputs.typeKey ?? "")
@@ -293,7 +293,7 @@ enum GuidanceEngine {
         return words
     }
 
-    private static func bodyWords(forAbv abv: Double?) -> [String] {
+    private static func wineBodyWords(forAbv abv: Double?) -> [String] {
         guard let abv else { return [] }
         if abv >= 14.0 { return ["Full-bodied", "Rich", "Warming"] }
         if abv >= 13.0 { return ["Medium to full-bodied", "Round"] }
