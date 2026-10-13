@@ -13,6 +13,7 @@ struct NewTastingFlowView: View {
     @State private var phase: Phase = .input
     @State private var beerInputs = BeerInputs()
     @State private var coffeeInputs = CoffeeInputs()
+    @State private var wineInputs = WineInputs()
     @State private var answers: [StageAnswer] = []
     @State private var overallRating: Int?
     @State private var summaryText = ""
@@ -30,7 +31,8 @@ struct NewTastingFlowView: View {
                     InputStepView(
                         beverage: $beverage,
                         beerInputs: $beerInputs,
-                        coffeeInputs: $coffeeInputs
+                        coffeeInputs: $coffeeInputs,
+                        wineInputs: $wineInputs
                     ) {
                         beginGuidedFlow()
                     }
@@ -82,15 +84,19 @@ struct NewTastingFlowView: View {
     }
 
     private var currentIntro: GuidanceIntro {
-        beverage == .beer
-            ? GuidanceEngine.beerIntro(for: beerInputs)
-            : GuidanceEngine.coffeeIntro(for: coffeeInputs)
+        switch beverage {
+        case .beer: return GuidanceEngine.beerIntro(for: beerInputs)
+        case .coffee: return GuidanceEngine.coffeeIntro(for: coffeeInputs)
+        case .wine: return GuidanceEngine.wineIntro(for: wineInputs)
+        }
     }
 
     private var currentStages: [TastingStage] {
-        beverage == .beer
-            ? GuidanceEngine.beerStages(for: beerInputs)
-            : GuidanceEngine.coffeeStages(for: coffeeInputs)
+        switch beverage {
+        case .beer: return GuidanceEngine.beerStages(for: beerInputs)
+        case .coffee: return GuidanceEngine.coffeeStages(for: coffeeInputs)
+        case .wine: return GuidanceEngine.wineStages(for: wineInputs)
+        }
     }
 
     private func beginGuidedFlow() {
@@ -101,15 +107,23 @@ struct NewTastingFlowView: View {
     }
 
     private func save() {
+        let displayName: String
+        switch beverage {
+        case .beer: displayName = beerInputs.name
+        case .coffee: displayName = coffeeInputs.name
+        case .wine: displayName = wineInputs.name
+        }
+
         let record = TastingRecord(
             id: UUID(),
             beverage: beverage,
             createdAt: Date(),
-            displayName: beverage == .beer ? beerInputs.name : coffeeInputs.name,
+            displayName: displayName,
             overallRating: overallRating,
             summary: summaryText,
             beerInputs: beverage == .beer ? beerInputs : nil,
             coffeeInputs: beverage == .coffee ? coffeeInputs : nil,
+            wineInputs: beverage == .wine ? wineInputs : nil,
             answers: answers
         )
         store.insert(record)
@@ -119,6 +133,7 @@ struct NewTastingFlowView: View {
     private func reset() {
         beerInputs = BeerInputs()
         coffeeInputs = CoffeeInputs()
+        wineInputs = WineInputs()
         answers = []
         overallRating = nil
         summaryText = ""
@@ -133,6 +148,7 @@ struct InputStepView: View {
     @Binding var beverage: Beverage
     @Binding var beerInputs: BeerInputs
     @Binding var coffeeInputs: CoffeeInputs
+    @Binding var wineInputs: WineInputs
     var onContinue: () -> Void
 
     var body: some View {
@@ -148,6 +164,7 @@ struct InputStepView: View {
                 switch beverage {
                 case .beer: BeerInputForm(inputs: $beerInputs)
                 case .coffee: CoffeeInputForm(inputs: $coffeeInputs)
+                case .wine: WineInputForm(inputs: $wineInputs)
                 }
 
                 PrimaryButton(
@@ -166,6 +183,7 @@ struct InputStepView: View {
         switch beverage {
         case .beer: return beerInputs.styleKey != nil
         case .coffee: return coffeeInputs.varietyKey != nil && coffeeInputs.methodKey != nil
+        case .wine: return wineInputs.typeKey != nil
         }
     }
 
@@ -175,6 +193,7 @@ struct InputStepView: View {
         case .coffee:
             if coffeeInputs.varietyKey == nil { return "Pick the bean variety to continue" }
             return "Pick a tasting method to continue"
+        case .wine: return "Pick a wine type to continue"
         }
     }
 }
@@ -430,6 +449,97 @@ struct CoffeeInputForm: View {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .strokeBorder(Theme.creamDim.opacity(0.15), lineWidth: 1)
         )
+    }
+}
+
+// MARK: - Wine input form
+
+struct WineInputForm: View {
+    @Binding var inputs: WineInputs
+
+    var body: some View {
+        VStack(spacing: 22) {
+            card {
+                VStack(alignment: .leading, spacing: 14) {
+                    SectionHeader(title: "The essentials", subtitle: "Wine type is all you need - everything else sharpens the guidance.")
+
+                    ThemedField(title: "Wine name (optional)", text: $inputs.name)
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Wine type *")
+                            .font(.caption)
+                            .foregroundStyle(Theme.creamDim)
+                        Menu {
+                            Picker("Type", selection: $inputs.typeKey) {
+                                ForEach(WineKnowledge.wineTypes, id: \.key) { type in
+                                    Text(type.name).tag(type.key as String?)
+                                }
+                            }
+                        } label: {
+                            HStack {
+                                Text(inputs.typeKey.flatMap { WineKnowledge.wineType(forKey: $0)?.name } ?? "Choose a wine type")
+                                    .font(.subheadline.weight(.medium))
+                                    .foregroundStyle(inputs.typeKey == nil ? Theme.creamDim : Theme.toffee)
+                                Spacer()
+                                Image(systemName: "chevron.up.chevron.down")
+                                    .font(.caption)
+                                    .foregroundStyle(Theme.caramelSoft)
+                            }
+                            .padding(12)
+                            .background(Theme.espresso.opacity(0.5))
+                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .strokeBorder(Theme.creamDim.opacity(0.15), lineWidth: 1)
+                            )
+                        }
+
+                        if let wineType = inputs.typeKey.flatMap({ WineKnowledge.wineType(forKey: $0) }) {
+                            Text(wineType.blurb)
+                                .font(.caption)
+                                .foregroundStyle(Theme.creamDim)
+                                .padding(.top, 2)
+                        }
+                    }
+                }
+            }
+
+            card {
+                VStack(alignment: .leading, spacing: 14) {
+                    SectionHeader(title: "Grape varieties", subtitle: "Known grapes add specific descriptors to look for.")
+
+                    VStack(alignment: .leading, spacing: 10) {
+                        DropdownMultiSelect(
+                            label: "Add grape varieties",
+                            options: WineKnowledge.grapeVarieties.map(\.name).sorted(),
+                            selection: $inputs.grapeVarieties
+                        )
+                    }
+                }
+            }
+
+            card {
+                VStack(alignment: .leading, spacing: 14) {
+                    SectionHeader(title: "Origin & Details", subtitle: "Region, vintage and stats help refine the guidance.")
+
+                    ThemedField(title: "Region (optional) - e.g. Bordeaux, Napa Valley, Tuscany", text: $inputs.region)
+
+                    NumberSliderRow(title: "Vintage (year)", range: 1900...Double(Calendar.current.component(.year, from: Date())), step: 1, unit: "", value: Binding<Double?>(
+                        get: { inputs.vintage.map(Double.init) },
+                        set: { inputs.vintage = $0.map { Int($0) } }
+                    ))
+
+                    NumberSliderRow(title: "ABV", range: 5.0...20.0, step: 0.5, unit: "%", value: $inputs.alcoholPercentage)
+                }
+            }
+
+            card {
+                VStack(alignment: .leading, spacing: 10) {
+                    SectionHeader(title: "Anything else?", subtitle: "Winery, label design, thoughts before tasting.")
+                    ThemedField(title: "Notes (optional)", text: $inputs.notes)
+                }
+            }
+        }
     }
 }
 

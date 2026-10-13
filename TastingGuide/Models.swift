@@ -3,12 +3,25 @@ import Foundation
 enum Beverage: String, Codable, CaseIterable, Identifiable {
     case beer
     case coffee
+    case wine
 
     var id: String { rawValue }
 
-    var title: String { self == .beer ? "Beer" : "Coffee" }
+    var title: String {
+        switch self {
+        case .beer: return "Beer"
+        case .coffee: return "Coffee"
+        case .wine: return "Wine"
+        }
+    }
 
-    var symbol: String { self == .beer ? "mug" : "cup.and.saucer.fill" }
+    var symbol: String {
+        switch self {
+        case .beer: return "mug"
+        case .coffee: return "cup.and.saucer.fill"
+        case .wine: return "wineglass.fill"
+        }
+    }
 }
 
 /// Everything the user can tell us about a beer. Only the style is required;
@@ -40,6 +53,21 @@ struct CoffeeInputs: Codable, Equatable {
     var notes: String = ""
 }
 
+/// Everything the user can tell us about a wine.
+struct WineInputs: Codable, Equatable {
+    var name: String = ""
+    var typeKey: String?
+    var grapeVarieties: [String] = []
+    var region: String = ""
+    var vintage: Int?
+    var alcoholPercentage: Double?
+    var notes: String = ""
+
+    var isEmptyDetails: Bool {
+        grapeVarieties.isEmpty && region.isEmpty && vintage == nil && alcoholPercentage == nil
+    }
+}
+
 struct StageAnswer: Codable, Equatable {
     var stageId: String
     var title: String
@@ -62,6 +90,7 @@ struct TastingRecord: Identifiable, Equatable {
     var summary: String
     var beerInputs: BeerInputs?
     var coffeeInputs: CoffeeInputs?
+    var wineInputs: WineInputs?
     var answers: [StageAnswer]
 }
 
@@ -79,6 +108,8 @@ extension TastingRecord {
                 return "\(v) \(m)"
             }
             return "Coffee"
+        case .wine:
+            return wineInputs.flatMap { WineKnowledge.wineType(forKey: $0.typeKey ?? "")?.name } ?? "Wine"
         }
     }
 
@@ -95,6 +126,14 @@ extension TastingRecord {
                 CoffeeKnowledge.method(forKey: inputs.methodKey ?? "")?.name
             ].compactMap { $0 }
             return parts.isEmpty ? "Coffee" : parts.joined(separator: " · ")
+        case .wine:
+            guard let inputs = wineInputs else { return "Wine" }
+            let parts: [String] = [
+                WineKnowledge.wineType(forKey: inputs.typeKey ?? "")?.name,
+                inputs.region.isEmpty ? nil : inputs.region,
+                inputs.vintage.map { "\($0)" }
+            ].compactMap { $0 }
+            return parts.isEmpty ? "Wine" : parts.joined(separator: " · ")
         }
     }
 }

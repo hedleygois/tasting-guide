@@ -53,6 +53,12 @@ struct HomeView: View {
                 caption: "Variety, roast and method - espresso, ristretto, filter, cupping and more",
                 gradient: Theme.coffeeGradient
             )
+            beverageCard(
+                beverage: .wine,
+                title: "Wine tasting",
+                caption: "Comprehensive wine guide with types, grapes, regions and vintage info",
+                gradient: Theme.wineGradient
+            )
         }
     }
 

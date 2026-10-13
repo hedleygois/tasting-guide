@@ -1,6 +1,6 @@
 # Tasting Guide
 
-A modern iOS app for guiding beer and coffee tasting experiences. Built with SwiftUI, this app helps you document and explore the nuances of your favorite beverages with a comprehensive knowledge base and intuitive interface.
+A modern iOS app for guiding beer, coffee, and **wine** tasting experiences. Built with SwiftUI, this app helps you document and explore the nuances of your favorite beverages with a comprehensive knowledge base and intuitive interface.
 
 ## Features
 
@@ -17,11 +17,19 @@ A modern iOS app for guiding beer and coffee tasting experiences. Built with Swi
 - **Brew Methods**: Espresso, Ristretto, Filtered, Cupping, and more
 - **Tasting Guidance**: Step-by-step guidance based on your selections
 
+### Wine Tasting ⭐ NEW
+- **Comprehensive Wine Types**: 20+ wine types including Cabernet Sauvignon, Pinot Noir, Chardonnay, Syrah, Merlot, Sauvignon Blanc, Riesling, and more
+- **Grape Variety Database**: 30+ grape varieties with detailed descriptors (Cabernet Sauvignon, Merlot, Pinot Noir, Chardonnay, Sauvignon Blanc, etc.)
+- **Global Regions**: 30+ wine regions from Bordeaux to Napa Valley, Tuscany to Barossa Valley
+- **Vintage & ABV Support**: Track vintage years and alcohol percentages
+- **Type-Specific Guidance**: Know what to expect from each wine type, including appearance, aroma, taste, mouthfeel, and finish
+- **Sparkling Wine Support**: Special guidance for Champagne and other sparkling wines
+
 ### Core Functionality
-- **Save Tasting Results**: Local SQLite database storage
-- **Tasting History**: Browse and review past tastings
-- **Modern UI**: Brown and caramel color theme symbolizing coffee and beer
-- **Info Banners**: Helpful notifications when selecting varieties without tasting information
+- **Save Tasting Results**: Local SQLite database storage for all beverage types
+- **Tasting History**: Browse and review past tastings across beer, coffee, and wine
+- **Modern UI**: Brown, caramel, and deep purple-wine color themes
+- **Info Banners**: Helpful notifications when selecting items without tasting information
 
 ## Screenshots
 
@@ -58,11 +66,12 @@ TastingGuide/
 ├── NewTastingFlowView.swift      # Tasting creation flow
 ├── TastingDetailView.swift        # Tasting details display
 ├── HistoryView.swift              # Tasting history browser
-├── Models.swift                   # Data models
+├── Models.swift                   # Data models (beer, coffee, wine)
 ├── BeerKnowledge.swift            # Beer styles, malts, hops data
 ├── CoffeeKnowledge.swift          # Coffee varieties and roast data
+├── WineKnowledge.swift            # Wine types, grapes, regions, and guidance
 ├── WCRVarieties.swift             # World Coffee Research variety catalog
-├── GuidanceEngine.swift           # Tasting guidance logic
+├── GuidanceEngine.swift           # Tasting guidance logic (beer, coffee, wine)
 ├── TastingStore.swift             # SQLite database operations
 ├── Theme.swift                    # App theming and colors
 └── Components.swift               # Reusable UI components
@@ -89,12 +98,18 @@ TastingGuide.xcodeproj/
 - **Roast Levels**: Light, Medium, Dark with sub-categories
 - **Brew Methods**: Multiple preparation styles with guidance
 
+### Wine Data
+- **Types**: 20+ wine styles with detailed expectations
+- **Grapes**: 30+ grape varieties with tasting descriptors
+- **Regions**: 30+ wine regions from around the world
+- **Vintage Data**: Support for tracking wine years and alcohol percentages
+
 ## Usage
 
 ### Creating a New Tasting
 
 1. Tap "New Tasting" from the home screen
-2. Select whether you're tasting beer or coffee
+2. Select whether you're tasting beer, coffee, or wine
 3. For beer:
    - Select style (required)
    - Optionally add malts (multi-select with chips)
@@ -105,8 +120,14 @@ TastingGuide.xcodeproj/
    - Select roast level
    - Select brew method
    - Get variety-specific guidance
-5. Document your tasting notes
-6. Save to your local database
+5. For wine:
+   - Select wine type (required)
+   - Optionally add grape varieties (multi-select with chips)
+   - Optionally add region
+   - Optionally add vintage year and ABV
+   - Get type-specific expectations
+6. Document your tasting notes
+7. Save to your local database
 
 ### Browsing History
 
@@ -122,6 +143,7 @@ TastingGuide.xcodeproj/
 Edit the appropriate knowledge file:
 - `BeerKnowledge.swift` - for beer styles, malts, hops
 - `CoffeeKnowledge.swift` - for coffee varieties and roasts
+- `WineKnowledge.swift` - for wine types, grapes, regions
 - `WCRVarieties.swift` - auto-generated from WCR data
 
 All lists are alphabetically ordered for easy navigation.
@@ -136,7 +158,12 @@ The coffee varieties are extracted from World Coffee Research's sitemap. To upda
 
 ## Theming
 
-The app uses a custom brown and caramel color scheme:
+The app uses a custom color scheme for each beverage type:
+- **Beer**: Golden to amber gradients (hop gold, caramel, toffee)
+- **Coffee**: Coffee to deep brown gradients (crema, espresso, bark)
+- **Wine**: Deep purple to burgundy gradients (wine red, garnet, deep purple)
+
+Shared colors:
 - Primary: Deep brown (#4A2C2A)
 - Secondary: Caramel (#C68642)
 - Accent: Light tan (#E8C4A0)
@@ -169,6 +196,7 @@ This project is proprietary. All rights reserved.
 
 - [World Coffee Research](https://worldcoffeeresearch.org/) for the comprehensive coffee variety catalog
 - The craft beer community for style definitions and expectations
+- Wine industry resources for wine type and grape variety information
 - Mistral Vibe for development assistance
 
 ## Contact
@@ -177,4 +205,4 @@ For questions or feedback, please open an issue on GitHub.
 
 ---
 
-**Tasting Guide** - Your companion for exploring the world of beer and coffee, one sip at a time.
+**Tasting Guide** - Your companion for exploring the world of beer, coffee, and wine, one sip at a time.

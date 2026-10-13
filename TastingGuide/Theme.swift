@@ -29,13 +29,22 @@ enum Theme {
         startPoint: .topLeading, endPoint: .bottomTrailing
     )
 
+    static let wineGradient = LinearGradient(
+        colors: [Color(hex: 0x8B1538), Color(hex: 0x6B0F28), Color(hex: 0x4A0E1C)],
+        startPoint: .topLeading, endPoint: .bottomTrailing
+    )
+
     static let caramelButton = LinearGradient(
         colors: [Color(hex: 0xD9AB6B), Color(hex: 0xB67C36)],
         startPoint: .top, endPoint: .bottom
     )
 
     static func gradient(for beverage: Beverage) -> LinearGradient {
-        beverage == .beer ? beerGradient : coffeeGradient
+        switch beverage {
+        case .beer: return beerGradient
+        case .coffee: return coffeeGradient
+        case .wine: return wineGradient
+        }
     }
 }
 

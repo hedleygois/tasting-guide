@@ -95,6 +95,17 @@ struct TastingDetailView: View {
                 facts.append(("Method", method.name))
             }
         }
+        if let wine = record.wineInputs {
+            if let wineType = WineKnowledge.wineType(forKey: wine.typeKey ?? "") {
+                facts.append(("Type", wineType.name))
+            }
+            if !wine.grapeVarieties.isEmpty {
+                facts.append(("Grapes", wine.grapeVarieties.compactMap { WineKnowledge.grapeVariety(forKey: $0)?.name ?? $0 }.joined(separator: ", ")))
+            }
+            if !wine.region.isEmpty { facts.append(("Region", wine.region)) }
+            if let vintage = wine.vintage { facts.append(("Vintage", "\(vintage)")) }
+            if let abv = wine.alcoholPercentage { facts.append(("ABV", String(format: "%.1f%%", abv))) }
+        }
         return facts
     }
 
@@ -124,6 +135,11 @@ struct TastingDetailView: View {
                         .foregroundStyle(Theme.creamDim)
                 }
                 if let notes = record.coffeeInputs?.notes, !notes.isEmpty {
+                    Text(notes)
+                        .font(.caption)
+                        .foregroundStyle(Theme.creamDim)
+                }
+                if let notes = record.wineInputs?.notes, !notes.isEmpty {
                     Text(notes)
                         .font(.caption)
                         .foregroundStyle(Theme.creamDim)

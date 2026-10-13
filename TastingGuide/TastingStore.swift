@@ -76,10 +76,12 @@ final class TastingStore: ObservableObject {
 
             var beerInputs: BeerInputs?
             var coffeeInputs: CoffeeInputs?
+            var wineInputs: WineInputs?
             if let data = inputsJSON.data(using: .utf8) {
                 switch beverage {
                 case .beer: beerInputs = try? decoder.decode(BeerInputs.self, from: data)
                 case .coffee: coffeeInputs = try? decoder.decode(CoffeeInputs.self, from: data)
+                case .wine: wineInputs = try? decoder.decode(WineInputs.self, from: data)
                 }
             }
 
@@ -110,6 +112,7 @@ final class TastingStore: ObservableObject {
         switch record.beverage {
         case .beer: inputsData = try? encoder.encode(record.beerInputs)
         case .coffee: inputsData = try? encoder.encode(record.coffeeInputs)
+        case .wine: inputsData = try? encoder.encode(record.wineInputs)
         }
         let answersData = try? encoder.encode(record.answers)
 

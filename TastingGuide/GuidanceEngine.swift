@@ -9,6 +9,7 @@ struct TastingStage: Identifiable {
     let suggestions: [String]
     let ratingLabel: String
     var expectation: String? = nil
+    var subStages: [TastingStage]? = nil
 }
 
 /// Header information shown before / alongside the guided stages.
@@ -157,6 +158,157 @@ enum GuidanceEngine {
         if ibu >= 55 { return ["Assertive bitterness", "Resinous"] }
         if ibu >= 30 { return ["Balanced bitterness"] }
         return ["Low bitterness", "Malty ending"]
+    }
+
+    // MARK: Wine
+
+    static func wineIntro(for inputs: WineInputs) -> GuidanceIntro {
+        let wineType = WineKnowledge.wineType(forKey: inputs.typeKey ?? "")
+        let wineTypeName = wineType?.name ?? "Wine"
+
+        var facts: [(String, String)] = [("Type", wineTypeName)]
+        if !inputs.grapeVarieties.isEmpty {
+            facts.append(("Grapes", inputs.grapeVarieties.compactMap { WineKnowledge.grapeVariety(forKey: $0)?.name ?? $0 }.joined(separator: ", ")))
+        }
+        if !inputs.region.isEmpty { facts.append(("Region", inputs.region)) }
+        if let vintage = inputs.vintage { facts.append(("Vintage", "\(vintage)")) }
+        if let abv = inputs.alcoholPercentage { facts.append(("ABV", String(format: "%.1f%%", abv))) }
+
+        let confidence: String?
+        if inputs.isEmptyDetails {
+            confidence = "You entered only the wine type, so these notes describe a typical \(wineTypeName). Taste and confirm what you actually perceive - your palate wins over the reference."
+        } else {
+            confidence = "Guidance combines the type, grapes, region and vintage you provided."
+        }
+
+        var tips = wineType?.tips ?? []
+        tips.append("Take a good look at the wine against a white background to assess color and clarity.")
+        tips.append("Swirl the wine in your glass to release aromas - the 'legs' or 'tears' on the sides are normal.")
+        if let abv = inputs.alcoholPercentage, abv >= 14.0 {
+            tips.append("At \(String(format: "%.1f", abv))% ABV, this is a full-bodied wine - expect alcohol warmth on the finish.")
+        }
+
+        return GuidanceIntro(
+            title: inputs.name.isEmpty ? wineTypeName : inputs.name,
+            subtitle: "Guided wine tasting · \(wineTypeName)",
+            confidenceNote: confidence,
+            facts: facts,
+            tips: tips
+        )
+    }
+
+    static func wineStages(for inputs: WineInputs) -> [TastingStage] {
+        let wineType = WineKnowledge.wineType(forKey: inputs.typeKey ?? "")
+        let grapeWords = inputs.grapeVarieties.flatMap { WineKnowledge.grapeVariety(forKey: $0)?.descriptors ?? [] }
+        let wineTypeWords = wineType?.aromas ?? []
+        let region = WineKnowledge.region(forKey: inputs.region)
+
+        let appearanceSuggestions = (wineType?.appearance ?? []) + colorWords(from: inputs.grapeVarieties)
+        let aromaSuggestions = unique((wineType?.aromas ?? []) + grapeWords + (region?.blurb.components(separated: .whitespacesAndNewlines).filter { $0.count > 4 } ?? []))
+        let flavorSuggestions = unique((wineType?.flavors ?? []) + grapeWords)
+        let bodySuggestions = unique((wineType?.bodyWords ?? []) + bodyWords(forAbv: inputs.alcoholPercentage))
+        let finishSuggestions = unique((wineType?.finishWords ?? []) + finishWords(forVintage: inputs.vintage))
+
+        let stageExpectations = WineKnowledge.expectations(forKey: inputs.typeKey ?? "")
+
+        // Sparkling wine has an additional step for bubbles
+        let isSparkling = inputs.typeKey == "champagne" || inputs.typeKey == "sparkling"
+
+        var stages: [TastingStage] = [
+            TastingStage(
+                id: "appearance",
+                title: "Appearance",
+                prompt: "Hold the glass against a white background and tilt it to look at the color gradient.",
+                guidance: "Assess color intensity (pale to deep), hue (ruby, garnet, purple, gold, straw), clarity (clear vs cloudy - though some unfiltered wines are intentionally cloudy), and brightness. For sparkling wines, also assess the bubbles.",
+                suggestions: unique(appearanceSuggestions),
+                ratingLabel: "Visual appeal",
+                expectation: stageExpectations?.forStage("appearance")),
+            TastingStage(
+                id: "aroma",
+                title: "Aroma / Nose",
+                prompt: "Swirl the wine and take several short sniffs.",
+                guidance: "Wine aromas fall into three categories: Primary (from the grape - fruit, floral, herbal), Secondary (from fermentation and aging - yeast, butter, vanilla, toast), and Tertiary (from bottle aging - leather, tobacco, earth, petrol). Try to identify notes in each category.",
+                suggestions: aromaSuggestions,
+                ratingLabel: "Aroma complexity",
+                expectation: stageExpectations?.forStage("aroma")),
+            TastingStage(
+                id: "taste",
+                title: "Taste / Palate",
+                prompt: "Take a sip and let it coat your entire mouth.",
+                guidance: "Assess the wine's components: Fruit (what types?), Sweetness (dry to sweet), Acidity (low to high - makes your mouth water), Tannin (in reds - the drying sensation), Alcohol (warmth), and Body (light to full). Check how the flavors match the aromas.",
+                suggestions: flavorSuggestions,
+                ratingLabel: "Flavor complexity",
+                expectation: stageExpectations?.forStage("taste"))
+        ]
+
+        if isSparkling {
+            stages.append(TastingStage(
+                id: "bubbles",
+                title: "Bubbles",
+                prompt: "Watch the bubbles rise and assess their quality.",
+                guidance: "Evaluate the bubble size (fine vs coarse), persistence (how long they last), and mousse (the foam at the surface). Fine, persistent bubbles are a sign of quality in traditional method sparkling wines.",
+                suggestions: ["Fine bubbles", "Persistent", "Form a mousse", "Delicate beading"],
+                ratingLabel: "Bubble quality"
+            ))
+        }
+
+        stages.append(contentsOf: [
+            TastingStage(
+                id: "mouthfeel",
+                title: "Mouthfeel & Texture",
+                prompt: "Focus on the wine's texture and structure.",
+                guidance: "Assess body (light, medium, full), texture (oily, creamy, silky, coarse), carbonation if present, and the balance between the wine's components. A well-balanced wine has harmony between fruit, acidity, tannin (in reds), sweetness, and alcohol.",
+                suggestions: bodySuggestions,
+                ratingLabel: "Mouthfeel",
+                expectation: stageExpectations?.forStage("mouthfeel")),
+            TastingStage(
+                id: "finish",
+                title: "Finish & Overall",
+                prompt: "Wait 10-15 seconds after swallowing and assess the aftertaste.",
+                guidance: "Count how long the flavor lingers (short, medium, long), whether it's clean or has any faults (bitterness from tannin, heat from alcohol, sweetness), and whether it invites another sip. Then give the wine one overall score.",
+                suggestions: finishSuggestions,
+                ratingLabel: "Overall",
+                expectation: stageExpectations?.forStage("finish"))
+        ])
+
+        return stages
+    }
+
+    private static func colorWords(from grapeVarieties: [String]) -> [String] {
+        var words: [String] = []
+        for key in grapeVarieties {
+            if let variety = WineKnowledge.grapeVariety(forKey: key) {
+                switch variety.color {
+                case "red":
+                    words.append("Deep ruby-purple tones")
+                case "white":
+                    words.append("Pale straw-gold tones")
+                case "both":
+                    words.append("Variable color tones")
+                default:
+                    break
+                }
+            }
+        }
+        return words
+    }
+
+    private static func bodyWords(forAbv abv: Double?) -> [String] {
+        guard let abv else { return [] }
+        if abv >= 14.0 { return ["Full-bodied", "Rich", "Warming"] }
+        if abv >= 13.0 { return ["Medium to full-bodied", "Round"] }
+        if abv <= 11.5 { return ["Light-bodied", "Crisp"] }
+        return []
+    }
+
+    private static func finishWords(forVintage vintage: Int?) -> [String] {
+        guard let vintage else { return [] }
+        let currentYear = Calendar.current.component(.year, from: Date())
+        let age = currentYear - vintage
+        if age >= 10 { return ["Complex", "Developed", "Tertiary notes"] }
+        if age >= 5 { return ["Mature", "Integrated", "Balanced"] }
+        if age < 2 { return ["Youthful", "Fresh", "Primary fruit"] }
+        return []
     }
 
     // MARK: Coffee
